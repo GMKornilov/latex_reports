@@ -2,10 +2,14 @@ from flask import Flask, request, flash, redirect, url_for, send_from_directory
 from werkzeug.utils import secure_filename
 from subprocess import Popen, PIPE, STDOUT, run
 import os
+import secrets
 
 app = Flask(__name__)
 
+alphabet = [chr(i) for i in range(ord('a'), ord('z') + 1)]
+
 UPLOAD_PATH = "./uploaded"
+NAME_LENGTH = 5
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_PATH
 app.secret_key = "tqeqrrqyqfttryfyeqte"
@@ -28,15 +32,13 @@ def get_pdf():
             print("No selected file")
             return redirect(request.url)
         if file and isAllowed(file.filename):
-            filename = secure_filename(file.filename)
+            filename = ''.join([secrets.choice(alphabet) for i in range(NAME_LENGTH)]) + ".tex"
             filepath = app.config['UPLOAD_FOLDER'] + "/" + filename
-            print(filepath)
             file.save(filepath)
             compileProc = run(["pdflatex", filepath], input="X", encoding="ascii")
             filename = filename.replace("tex", "pdf")
             if compileProc.returncode == 0:
                 os.rename(filename, app.config['UPLOAD_FOLDER'] + "/" + filename)
-                print(filename)
                 return redirect(url_for('uploaded_file', filename=filename))
             else:
                 flash("BAD .tex file = compilation error")
